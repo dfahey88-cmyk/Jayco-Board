@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jayco Team Board</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue: #0079c1;
+    --blue-dark: #004f7d;
+    --blue-light: #00aeef;
+    --charcoal: #2e3238;
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f7f8fa;
+    --border: rgba(0,0,0,0.1);
+    --border2: rgba(0,0,0,0.18);
+    --text: #1a1d21;
+    --text2: #5a6270;
+    --text3: #9aa0aa;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 13px;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--blue);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .header-logo {
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    letter-spacing: 0.04em;
+  }
+  .header-logo span { font-weight: 300; opacity: 0.8; }
+  .header-actions { margin-left: auto; display: flex; gap: 6px; }
+  .hbtn {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    border: 1px solid rgba(255,255,255,0.3);
+    background: rgba(255,255,255,0.15);
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: background 0.15s;
+  }
+  .hbtn:hover { background: rgba(255,255,255,0.25); }
+  .hbtn svg { width: 14px; height: 14px; stroke: white; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .saved-label { font-size: 11px; color: rgba(255,255,255,0.6); align-self: center; }
+
+  /* BOARD */
+  .board-wrap {
+    padding: 12px;
+    overflow-x: auto;
+    min-height: calc(100vh - 48px);
+  }
+  .board {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    min-width: max-content;
+  }
+
+  /* COLUMN */
+  .col {
+    width: 280px;
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .col-header {
+    padding: 8px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: white;
+    cursor: pointer;
+    user-select: none;
+  }
+  .col-header-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .col-header-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.15s; }
+  .col-header:hover .col-header-actions { opacity: 1; }
+  .icon-btn {
+    width: 22px; height: 22px;
+    border: none; background: rgba(255,255,255,0.2);
+    border-radius: 4px; cursor: pointer; color: white;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,0.35); }
+  .icon-btn svg, .tbtn svg, .sec-add-btn svg, .add-row svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .chevron { transition: transform 0.2s; width: 14px; height: 14px; flex-shrink: 0; }
+  .collapsed .chevron { transform: rotate(-90deg); }
+
+  .col-body { padding: 8px; flex: 1; }
+  .col.collapsed .col-body { display: none; }
+
+  /* SECTION */
+  .section { margin-bottom: 10px; }
+  .section-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .section-label-text { flex: 1; }
+  .sec-add-btn {
+    width: 16px; height: 16px;
+    border: none; background: none; cursor: pointer;
+    color: var(--text3); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 0.15s, color 0.15s;
+  }
+  .section:hover .sec-add-btn { opacity: 1; }
+  .sec-add-btn:hover { color: var(--blue); }
+  .sec-add-btn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; }
+
+  /* TASK */
+  .task-row { margin-bottom: 1px; }
+  .task {
+    display: flex; align-items: flex-start; gap: 5px;
+    padding: 3px 4px; border-radius: 5px; cursor: pointer;
+    transition: background 0.1s;
+    position: relative;
+  }
+  .task:hover { background: var(--surface2); }
+  .task input[type=checkbox] {
+    margin-top: 1px; flex-shrink: 0;
+    accent-color: var(--blue);
+    cursor: pointer; width: 13px; height: 13px;
+  }
+  .task-text {
+    font-size: 11.5px; color: var(--text);
+    line-height: 1.4; flex: 1; word-break: break-word;
+    cursor: pointer;
+  }
+  .task.done .task-text { text-decoration: line-through; color: var(--text3); }
+  .task-btns {
+    display: none; gap: 2px; flex-shrink: 0; margin-top: 1px;
+  }
+  .task:hover .task-btns { display: flex; }
+  .tbtn {
+    width: 18px; height: 18px; border: none; background: none;
+    cursor: pointer; color: var(--text3); border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.1s, background 0.1s;
+  }
+  .tbtn:hover { color: var(--blue); background: rgba(0,121,193,0.08); }
+  .tbtn.del:hover { color: #d0342c; background: rgba(208,52,44,0.08); }
+  .tbtn svg { width: 12px; height: 12px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* SUBTASKS */
+  .subtasks {
+    margin-left: 18px;
+    border-left: 2px solid var(--border);
+    padding-left: 7px;
+    margin-top: 1px;
+    margin-bottom: 2px;
+  }
+
+  /* ADD BUTTONS */
+  .add-row {
+    display: flex; align-items: center; gap: 5px;
+    width: 100%; border: none; background: none;
+    color: var(--text3); font-size: 11px; cursor: pointer;
+    padding: 3px 4px; border-radius: 5px;
+    transition: color 0.1s, background 0.1s;
+    text-align: left;
+  }
+  .add-row:hover { color: var(--blue); background: rgba(0,121,193,0.06); }
+  .add-row svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; flex-shrink: 0; }
+
+  .add-col-btn {
+    width: 44px;
+    min-height: 60px;
+    background: rgba(255,255,255,0.6);
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: var(--text3);
+    font-size: 10px;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .add-col-btn:hover { background: white; color: var(--blue); border-color: var(--blue); }
+  .add-col-btn svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; }
+
+  /* MODAL */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px; width: 320px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    border: 1px solid var(--border);
+  }
+  .modal h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+  .modal input, .modal select {
+    width: 100%; font-size: 13px; padding: 8px 10px;
+    border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--surface2); color: var(--text);
+    margin-bottom: 8px; outline: none;
+    font-family: inherit;
+  }
+  .modal input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,121,193,0.12); }
+  .modal label { font-size: 11px; color: var(--text2); margin-bottom: 3px; display: block; }
+  .color-row { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .color-swatch {
+    width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: transform 0.1s, border-color 0.1s;
+  }
+  .color-swatch:hover { transform: scale(1.15); }
+  .color-swatch.selected { border-color: var(--text); transform: scale(1.1); }
+  .modal-btns { display: flex; gap: 6px; justify-content: flex-end; margin-top: 4px; }
+  .mbtn {
+    font-size: 12px; padding: 7px 14px; border-radius: var(--radius);
+    cursor: pointer; border: 1px solid var(--border2);
+    background: var(--surface2); color: var(--text);
+    font-family: inherit; transition: background 0.1s;
+  }
+  .mbtn:hover { background: var(--border); }
+  .mbtn.ok { background: var(--blue); color: white; border-color: var(--blue); }
+  .mbtn.ok:hover { background: var(--blue-dark); }
+  .mbtn.danger { background: #d0342c; color: white; border-color: #d0342c; }
+  .mbtn.danger:hover { background: #a8261f; }
+
+  /* CONFIRM */
+  .confirm-text { font-size: 13px; color: var(--text2); margin-bottom: 14px; line-height: 1.5; }
+
+  /* DRAG AND DROP */
+  .col.dragging { opacity: 0.4; }
+  .col.drag-over { outline: 2px dashed var(--blue); outline-offset: 2px; }
+  .drag-handle {
+    cursor: grab; padding: 0 4px; color: rgba(255,255,255,0.5);
+    display: flex; align-items: center; flex-shrink: 0;
+  }
+  .drag-handle:active { cursor: grabbing; }
+  .drag-handle svg { width: 12px; height: 12px; fill: currentColor; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--charcoal); color: white; padding: 8px 18px;
+    border-radius: 20px; font-size: 12px; z-index: 200;
+    opacity: 0; transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-logo">JAYCO <span>Team Board</span></div>
+  <div class="saved-label" id="saved-lbl">Saved just now</div>
+  <div class="header-actions">
+    <button class="hbtn" onclick="clearDone()">
+      <svg width="14" height="14" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      Clear done
+    </button>
+    <button class="hbtn" onclick="exportMd()">
+      <svg width="14" height="14" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Export
+    </button>
+  </div>
+</div>
+
+<div class="board-wrap">
+  <div class="board" id="board">
+    <button class="add-col-btn" id="add-col-btn" onclick="openModal('column',null,null,null)">
+      <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal-box">
+    <h3 id="modal-h">Add</h3>
+    <div id="modal-body"></div>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SK = 'jayco_board_v4';
+const COLORS = ['#0079c1','#00aeef','#004f7d','#2e3238','#1a7a4a','#8b3a8b','#c05200','#7a1a1a'];
+
+const DEF = {columns:[
+  {id:'jcin',label:'JCIN',color:'#0079c1',collapsed:false,sections:[
+    {id:'s0',label:'',tasks:[
+      {id:'t1',text:'Auto save paperwork files',done:false,subs:[]},
+      {id:'t2',text:'Eliminate paperwork',done:false,subs:[]},
+      {id:'t3',text:'Summary to replace spec sheets',done:false,subs:[]},
+      {id:'t4',text:'New run tracker – scope further uses',done:false,subs:[]},
+    ]}
+  ]},
+  {id:'projects',label:'Projects',color:'#0079c1',collapsed:false,sections:[
+    {id:'s1',label:'15KW Battery Trial',tasks:[
+      {id:'t5',text:'Cradles',done:false,subs:[]},
+      {id:'t6',text:'Batts',done:false,subs:[]},
+      {id:'t7',text:'Lifter',done:false,subs:[]},
+      {id:'t8',text:'Choose unit for 2nd fitment',done:false,subs:[]},
+    ]},
+    {id:'s2',label:'Schedule 19.61-2 SC-MY26.5',tasks:[
+      {id:'t9',text:'Does .5 work',done:false,subs:[{id:'sub1',text:'We have errors (noted)',done:false}]},
+      {id:'t10',text:'Set new specs',done:false,subs:[]},
+      {id:'t11',text:'Release run',done:false,subs:[]},
+    ]},
+    {id:'s3',label:'Schedule 16.67-5 Full Height Proto',tasks:[
+      {id:'t12',text:'DWG package ready',done:false,subs:[]},
+      {id:'t13',text:'Released to prod',done:false,subs:[]},
+    ]},
+    {id:'s4',label:'Schedule 21.66-4.AV Proto',tasks:[
+      {id:'t14',text:'DWG package',done:false,subs:[]},
+      {id:'t15',text:'Chassis package 4T (OLI)',done:false,subs:[]},
+      {id:'t16',text:'Released to production',done:false,subs:[]},
+    ]},
+    {id:'s5',label:'15.48-MY25',tasks:[
+      {id:'t17',text:'Is specs okay',done:false,subs:[]},
+      {id:'t18',text:'Schedule unit',done:false,subs:[]},
+      {id:'t19',text:'Release to prod',done:false,subs:[]},
+    ]},
+    {id:'s6',label:'12V Step',tasks:[
+      {id:'t20',text:'Introduce July',done:false,subs:[]},
+      {id:'t21',text:'More testing',done:false,subs:[]},
+    ]},
+  ]},
+  {id:'scott',label:'Scott Jones',color:'#00aeef',collapsed:false,sections:[
+    {id:'s7',label:'Renault',tasks:[
+      {id:'t22',text:'Renault proto plan',done:false,subs:[]},
+      {id:'t23',text:'Move Renault forward?',done:true,subs:[]},
+      {id:'t24',text:'20x Fiat missing rear windows',done:true,subs:[{id:'sub2',text:'Add 5x options as per NM',done:true}]},
+      {id:'t25',text:'Put blinds/rear screens in cell',done:false,subs:[]},
+    ]},
+    {id:'s8',label:'Campervan',tasks:[
+      {id:'t26',text:'Continue campervan BOM',done:false,subs:[{id:'sub3',text:'Move to changes',done:false}]},
+    ]},
+    {id:'s9',label:'Scheduling',tasks:[
+      {id:'t27',text:'Schedule build rate scenarios',done:false,subs:[]},
+      {id:'t28',text:'Model mix check',done:false,subs:[]},
+      {id:'t29',text:'Series qty',done:false,subs:[]},
+      {id:'t30',text:'Model qty',done:false,subs:[]},
+      {id:'t31',text:'Auto cycle calculator',done:false,subs:[]},
+      {id:'t32',text:'Models available vs scheduled vs sold',done:false,subs:[]},
+      {id:'t33',text:'Run sizes out – side parameters',done:false,subs:[]},
+    ]},
+  ]},
+  {id:'chris',label:'Chris Ryan',color:'#004f7d',collapsed:false,sections:[
+    {id:'s10',label:'',tasks:[
+      {id:'t34',text:'Auto assigning cabs',done:false,subs:[{id:'sub4',text:'Manual when required (EFP)',done:false}]},
+      {id:'t35',text:'Add VINs to FileMaker',done:false,subs:[]},
+      {id:'t36',text:'1 page summaries to replace spec pack',done:false,subs:[]},
+    ]}
+  ]},
+  {id:'gerry',label:'Gerry Ryan',color:'#2e3238',collapsed:false,sections:[
+    {id:'s11',label:'Programming',tasks:[
+      {id:'t37',text:'New auto edging machine',done:false,subs:[{id:'sub5',text:'Need software for trials',done:false}]},
+      {id:'t38',text:'Double sided LMX – is it fixed?',done:false,subs:[{id:'sub6',text:'Check upcoming runs Kroma',done:false}]},
+    ]},
+    {id:'s12',label:'Motorised',tasks:[
+      {id:'t39',text:'Build rate to 5 on MH',done:false,subs:[]},
+    ]},
+  ]},
+]};
+
+let data = JSON.parse(localStorage.getItem(SK) || 'null') || JSON.parse(JSON.stringify(DEF));
+let pending = null;
+let selectedColor = COLORS[0];
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,5); }
+
+function save() {
+  localStorage.setItem(SK, JSON.stringify(data));
+  const t = new Date();
+  document.getElementById('saved-lbl').textContent = 'Saved ' + t.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// SVG icons
+const ic = {
+  plus: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  trash: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>',
+  edit: '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+  chevron: '<svg class="chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+};
+
+function render() {
+  const board = document.getElementById('board');
+  const addBtn = document.getElementById('add-col-btn');
+  board.innerHTML = '';
+  board.appendChild(addBtn);
+
+  data.columns.forEach(col => {
+    const el = document.createElement('div');
+    el.className = 'col' + (col.collapsed ? ' collapsed' : '');
+    el.dataset.id = col.id;
+    el.draggable = true;
+    el.addEventListener('dragstart', onDragStart);
+    el.addEventListener('dragover', onDragOver);
+    el.addEventListener('dragleave', onDragLeave);
+    el.addEventListener('drop', onDrop);
+    el.addEventListener('dragend', onDragEnd);
+
+    let html = `<div class="col-header" style="background:${col.color}" onclick="toggleCol('${col.id}')">
+      <div class="drag-handle" draggable="false" onmousedown="event.stopPropagation()" title="Drag to reorder">
+        <svg viewBox="0 0 8 14"><circle cx="2" cy="2" r="1.2"/><circle cx="6" cy="2" r="1.2"/><circle cx="2" cy="7" r="1.2"/><circle cx="6" cy="7" r="1.2"/><circle cx="2" cy="12" r="1.2"/><circle cx="6" cy="12" r="1.2"/></svg>
+      </div>
+      <span class="col-header-title">${col.label}</span>
+      <div class="col-header-actions" onclick="event.stopPropagation()">
+        <button class="icon-btn" title="Rename column" onclick="openModal('rename-col','${col.id}',null,null)">${ic.edit}</button>
+        <button class="icon-btn" title="Delete column" onclick="openModal('delete-col','${col.id}',null,null)">${ic.trash}</button>
+      </div>
+      ${ic.chevron}
+    </div>`;
+
+    html += `<div class="col-body">`;
+    col.sections.forEach(sec => {
+      html += `<div class="section">`;
+      if (sec.label) {
+        html += `<div class="section-label">
+          <span class="section-label-text">${sec.label}</span>
+          <button class="sec-add-btn" title="Add task" onclick="openModal('task','${col.id}','${sec.id}',null)">${ic.plus}</button>
+        </div>`;
+      }
+      sec.tasks.forEach(task => {
+        html += renderTask(task, col.id, sec.id);
+      });
+      if (!sec.label) {
+        html += `<button class="add-row" onclick="openModal('task','${col.id}','${sec.id}',null)">${ic.plus} Add task</button>`;
+      }
+      html += `</div>`;
+    });
+    html += `<button class="add-row" onclick="openModal('section','${col.id}',null,null)">${ic.plus} Add section</button>`;
+    html += `</div>`;
+
+    el.innerHTML = html;
+    board.insertBefore(el, addBtn);
+  });
+}
+
+function renderTask(task, colId, secId) {
+  const dc = task.done ? 'done' : '';
+  let html = `<div class="task-row">
+    <div class="task ${dc}">
+      <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggle('${task.id}')">
+      <span class="task-text" onclick="toggle('${task.id}')">${task.text}</span>
+      <div class="task-btns">
+        <button class="tbtn" title="Add sub-task" onclick="openModal('sub','${colId}','${secId}','${task.id}')">${ic.plus}</button>
+        <button class="tbtn del" title="Delete" onclick="openModal('delete-task','${colId}','${secId}','${task.id}')">${ic.trash}</button>
+      </div>
+    </div>`;
+  if (task.subs && task.subs.length) {
+    html += `<div class="subtasks">`;
+    task.subs.forEach(sub => {
+      const sc = sub.done ? 'done' : '';
+      html += `<div class="task ${sc}">
+        <input type="checkbox" ${sub.done ? 'checked' : ''} onchange="toggleSub('${task.id}','${sub.id}')">
+        <span class="task-text" onclick="toggleSub('${task.id}','${sub.id}')">${sub.text}</span>
+        <div class="task-btns">
+          <button class="tbtn del" title="Delete" onclick="openModal('delete-sub','${colId}','${task.id}','${sub.id}')">${ic.trash}</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+  html += `</div>`;
+  return html;
+}
+
+function toggle(tid) {
+  for (const col of data.columns) for (const sec of col.sections) {
+    const t = sec.tasks.find(t => t.id === tid);
+    if (t) { t.done = !t.done; save(); render(); return; }
+  }
+}
+
+function toggleSub(taskId, subId) {
+  for (const col of data.columns) for (const sec of col.sections) {
+    const t = sec.tasks.find(t => t.id === taskId);
+    if (t) {
+      const s = (t.subs||[]).find(s => s.id === subId);
+      if (s) { s.done = !s.done; save(); render(); return; }
+    }
+  }
+}
+
+function toggleCol(colId) {
+  const col = data.columns.find(c => c.id === colId);
+  if (col) { col.collapsed = !col.collapsed; save(); render(); }
+}
+
+// MODAL SYSTEM
+function openModal(type, colId, secId, taskId) {
+  pending = {type, colId, secId, taskId};
+  const h = document.getElementById('modal-h');
+  const body = document.getElementById('modal-body');
+  const btns = document.getElementById('modal-btns');
+  selectedColor = colId ? (data.columns.find(c=>c.id===colId)||{}).color || COLORS[0] : COLORS[0];
+
+  if (type === 'task') {
+    h.textContent = 'Add task';
+    body.innerHTML = `<input type="text" id="mi" placeholder="Task description..." autofocus>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn ok" onclick="submitModal()">Add task</button>`;
+  } else if (type === 'sub') {
+    h.textContent = 'Add sub-task';
+    body.innerHTML = `<input type="text" id="mi" placeholder="Sub-task description..." autofocus>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn ok" onclick="submitModal()">Add sub-task</button>`;
+  } else if (type === 'section') {
+    h.textContent = 'Add section';
+    body.innerHTML = `<input type="text" id="mi" placeholder="Section name..." autofocus>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn ok" onclick="submitModal()">Add section</button>`;
+  } else if (type === 'column') {
+    h.textContent = 'Add column';
+    body.innerHTML = `
+      <label>Column name</label>
+      <input type="text" id="mi" placeholder="e.g. Daniel Smith" autofocus>
+      <label>Header colour</label>
+      <div class="color-row">${COLORS.map(c=>`<div class="color-swatch${c===selectedColor?' selected':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('')}</div>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn ok" onclick="submitModal()">Add column</button>`;
+  } else if (type === 'rename-col') {
+    const col = data.columns.find(c=>c.id===colId);
+    h.textContent = 'Edit column';
+    body.innerHTML = `
+      <label>Column name</label>
+      <input type="text" id="mi" value="${col.label}" autofocus>
+      <label>Header colour</label>
+      <div class="color-row">${COLORS.map(c=>`<div class="color-swatch${c===col.color?' selected':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('')}</div>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn ok" onclick="submitModal()">Save changes</button>`;
+  } else if (type === 'delete-col') {
+    const col = data.columns.find(c=>c.id===colId);
+    h.textContent = 'Delete column';
+    body.innerHTML = `<p class="confirm-text">Delete the <strong>${col.label}</strong> column and all its tasks? This cannot be undone.</p>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn danger" onclick="submitModal()">Delete column</button>`;
+  } else if (type === 'delete-task') {
+    h.textContent = 'Delete task';
+    body.innerHTML = `<p class="confirm-text">Delete this task and any sub-tasks under it?</p>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn danger" onclick="submitModal()">Delete task</button>`;
+  } else if (type === 'delete-sub') {
+    h.textContent = 'Delete sub-task';
+    body.innerHTML = `<p class="confirm-text">Delete this sub-task?</p>`;
+    btns.innerHTML = `<button class="mbtn" onclick="closeModal()">Cancel</button><button class="mbtn danger" onclick="submitModal()">Delete</button>`;
+  }
+
+  document.getElementById('overlay').classList.add('open');
+  const inp = document.getElementById('mi');
+  if (inp) setTimeout(() => { inp.focus(); inp.select && inp.select(); }, 50);
+}
+
+function selectColor(c) {
+  selectedColor = c;
+  document.querySelectorAll('.color-swatch').forEach(el => {
+    el.classList.toggle('selected', el.style.background === c || el.style.backgroundColor === c);
+  });
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  pending = null;
+}
+
+function submitModal() {
+  if (!pending) return closeModal();
+  const {type, colId, secId, taskId} = pending;
+  const inp = document.getElementById('mi');
+  const text = inp ? inp.value.trim() : '';
+
+  if (type === 'task') {
+    if (!text) return;
+    const col = data.columns.find(c=>c.id===colId);
+    const sec = col.sections.find(s=>s.id===secId);
+    sec.tasks.push({id:uid(), text, done:false, subs:[]});
+  } else if (type === 'sub') {
+    if (!text) return;
+    for (const col of data.columns) for (const sec of col.sections) {
+      const t = sec.tasks.find(t=>t.id===taskId);
+      if (t) { if(!t.subs)t.subs=[]; t.subs.push({id:uid(), text, done:false}); break; }
+    }
+  } else if (type === 'section') {
+    if (!text) return;
+    const col = data.columns.find(c=>c.id===colId);
+    col.sections.push({id:uid(), label:text, tasks:[]});
+  } else if (type === 'column') {
+    if (!text) return;
+    data.columns.push({id:uid(), label:text, color:selectedColor, collapsed:false,
+      sections:[{id:uid(), label:'', tasks:[]}]});
+  } else if (type === 'rename-col') {
+    if (!text) return;
+    const col = data.columns.find(c=>c.id===colId);
+    col.label = text; col.color = selectedColor;
+  } else if (type === 'delete-col') {
+    data.columns = data.columns.filter(c=>c.id!==colId);
+    toast('Column deleted');
+  } else if (type === 'delete-task') {
+    const col = data.columns.find(c=>c.id===colId);
+    const sec = col.sections.find(s=>s.id===secId);
+    sec.tasks = sec.tasks.filter(t=>t.id!==taskId);
+    toast('Task deleted');
+  } else if (type === 'delete-sub') {
+    for (const col of data.columns) for (const sec of col.sections) {
+      const t = sec.tasks.find(t=>t.id===colId);
+      if (t) { t.subs = t.subs.filter(s=>s.id!==secId); break; }
+    }
+    toast('Sub-task deleted');
+  }
+
+  save(); render(); closeModal();
+}
+
+function clearDone() {
+  data.columns.forEach(col => col.sections.forEach(sec => {
+    sec.tasks = sec.tasks.filter(t => !t.done);
+    sec.tasks.forEach(t => { if(t.subs) t.subs = t.subs.filter(s => !s.done); });
+  }));
+  save(); render(); toast('Done items cleared');
+}
+
+function exportMd() {
+  let out = '# Jayco Team Board\nExported: ' + new Date().toLocaleString() + '\n\n';
+  data.columns.forEach(col => {
+    out += `## ${col.label}\n`;
+    col.sections.forEach(sec => {
+      if (sec.label) out += `### ${sec.label}\n`;
+      sec.tasks.forEach(t => {
+        out += `- [${t.done?'x':' '}] ${t.text}\n`;
+        (t.subs||[]).forEach(s => out += `  - [${s.done?'x':' '}] ${s.text}\n`);
+      });
+    });
+    out += '\n';
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([out], {type:'text/markdown'}));
+  a.download = 'jayco-board-' + new Date().toISOString().slice(0,10) + '.md';
+  a.click();
+  toast('Exported');
+}
+
+// Keyboard & click-outside
+document.getElementById('overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('overlay')) closeModal();
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Enter' && document.getElementById('overlay').classList.contains('open')) {
+    const inp = document.getElementById('mi');
+    if (inp && document.activeElement === inp) submitModal();
+  }
+});
+
+// DRAG AND DROP
+let dragId = null;
+
+function onDragStart(e) {
+  dragId = this.dataset.id;
+  this.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  if (this.dataset.id !== dragId) this.classList.add('drag-over');
+}
+
+function onDragLeave() {
+  this.classList.remove('drag-over');
+}
+
+function onDrop(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  const targetId = this.dataset.id;
+  if (!dragId || dragId === targetId) return;
+  const fromIdx = data.columns.findIndex(c => c.id === dragId);
+  const toIdx = data.columns.findIndex(c => c.id === targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  const [moved] = data.columns.splice(fromIdx, 1);
+  data.columns.splice(toIdx, 0, moved);
+  save(); render();
+}
+
+function onDragEnd() {
+  document.querySelectorAll('.col').forEach(el => {
+    el.classList.remove('dragging', 'drag-over');
+  });
+  dragId = null;
+}
+
+render();
+</script>
+</body>
+</html>
