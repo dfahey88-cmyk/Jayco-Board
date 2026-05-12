@@ -380,6 +380,7 @@ function makeColInner(col){
   </div>`;
 
   html+=`<div class="col-body">`;
+  const hasNamedGroups = col.groups.some(g=>g.label);
   col.groups.forEach(group=>{
     html+=`<div class="group">`;
     if(group.label){
@@ -392,7 +393,10 @@ function makeColInner(col){
       </div>`;
     }
     group.tasks.forEach(task=>{html+=renderTask(task,col.id,group.id)});
-    html+=`<button class="add-btn" onclick="openModal('task','${col.id}','${group.id}',null)">${SVG.plus} Add task</button>`;
+    // Only show add task for unlabelled group if there are no named groups
+    if(group.label || !hasNamedGroups){
+      html+=`<button class="add-btn" onclick="openModal('task','${col.id}','${group.id}',null)">${SVG.plus} Add task</button>`;
+    }
     html+=`</div>`;
   });
   html+=`<button class="add-btn" style="margin-top:6px;border-top:1px dashed var(--border2);padding-top:6px" onclick="openModal('group','${col.id}',null,null)">${SVG.plus} Add group</button>`;
